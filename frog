@@ -1,0 +1,83 @@
+#!/usr/local/bin/zsh
+
+blog_dir=blog
+new_post_tmp=.new-post.tmp
+draft=.draft
+
+function frog_fixup () {
+  # copy resource directories into blog directory
+  foreach d ( css img js )
+    rsync -az $d $blog_dir
+  end
+
+  # fix references
+  find $blog_dir -name '*.html' -exec sed -i.0 -E "s/(href=\"\/)(css|feeds|tags|[0-9]{4})/\1$blog_dir\/\2/g" {} \; 
+  find $blog_dir -name '*.html' -exec sed -i.0 -E "s/(src=\"\/)(js)/\1$blog_dir\/\2/g" {} \; 
+  find $blog_dir -name '*.html' -exec sed -i.0 -E "s/((About|index(-[0-9]+)?).html)/$blog_dir\/\1/g" {} \;
+  find $blog_dir -name '*.html' -exec sed -i.0 -E "s/(\/$blog_dir){2}/\1/g" {} \;
+  find $blog_dir -name '*.html.0' -exec rm {} \;
+}
+
+function frog_command () {
+  case "$1" in
+    build)
+      exec raco frog -b
+      ;;
+    preview)
+      exec raco frog -p
+      ;;
+    fixup)
+      echo fixing up references
+      frog_fixup
+      ;;
+    deploy)
+      echo deploying
+      rsync -avz $blog_dir webhost:www
+      ;;
+    clean)
+      # frog's built-in clean option is a little subpar
+      # easier to just blow away the whole blog directory
+      rm -rf $blog_dir
+      ;;
+    all)
+      exec frog build fixup
+      ;;
+    all-deploy)
+      exec frog build fixup deploy
+      ;;
+    init)
+      exec raco frog --init
+      ;;
+    resume)
+      exec $EDITOR `readlink $draft`
+      ;;
+    delete-draft)
+      echo deleting draft `readlink $draft`
+      rm -f `readlink $draft`
+      rm -f $draft
+      ;;
+    *)
+      exec raco frog "$@"
+      ;;
+  esac
+}
+
+if [[ "$@" == "" ]] ; then
+  echo no subcommand specified;
+  exit 1;
+fi
+
+case "$1" in 
+  new)
+    raco frog -n "$2" > $new_post_tmp
+    post_name=`sed '1,2d' $new_post_tmp`
+    rm -f $new_post_tmp
+    ln -s $post_name $draft
+    exec frog resume
+    ;;
+  *)
+    foreach subcmd ( "$@" )
+      frog_command $subcmd
+    end
+    ;;
+esac
