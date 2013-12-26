@@ -47,7 +47,7 @@ build` first performs a Frog clean (`raco frog --clean`) and then a
 build (`raco frog --build`). The full list of subcommands (with
 explanations) is as follows:
 
- * new "<post title>"
+ * new "\<post title\>"
 
 Creates a new post with the given title (via `raco frog --new "<post
 title>"`) and opens the file in the editor given by the environment's
