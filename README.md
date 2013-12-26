@@ -101,8 +101,13 @@ simply deleted.
 
   * resume
 
-Opens the .md file for the most recently created page using the editor
+Opens the `.md` file for the most recently created page using the editor
 specified by the `EDITOR` environment variable.
+
+  * delete-draft
+
+Deletes the `.md` file for the most recently created page and the
+`.draft` symlink.
 
   * init
 

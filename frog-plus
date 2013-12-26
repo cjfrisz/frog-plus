@@ -93,7 +93,7 @@ case "$1" in
     post_name=`sed '1,2d' $new_post_tmp`
     rm -f $new_post_tmp
     ln -s $post_name $draft
-    exec frog resume ${@:3}
+    exec $0 resume ${@:3}
     ;;
   *)
     foreach subcmd ( "$@" )
