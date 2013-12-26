@@ -1,6 +1,13 @@
 #!/usr/local/bin/zsh
 
+# Change these two variable to match the hostname and path for the
+# deploy subcommand
+host=webhost
+website_path=www
+
+# Change this to match the value out of "output-dir" in .frogrc
 blog_dir=blog
+
 new_post_tmp=.new-post.tmp
 draft=.draft
 
@@ -21,40 +28,53 @@ function frog_fixup () {
 function frog_command () {
   case "$1" in
     build)
-      exec raco frog -b
+      echo building blog to output $blog_dir
+      raco frog -b
       ;;
     preview)
-      exec raco frog -p
+      raco frog -p
       ;;
     fixup)
-      echo fixing up references
-      frog_fixup
+      if [[ $blog_dir != "." ]] ; then
+        echo fixing up references
+        frog_fixup
+      fi
       ;;
     deploy)
       echo deploying
-      rsync -avz $blog_dir webhost:www
+      rsync -avz --exclude '_src' $blog_dir $host:$website_path
       ;;
     clean)
-      # frog's built-in clean option is a little subpar
-      # easier to just blow away the whole blog directory
-      rm -rf $blog_dir
-      ;;
-    all)
-      exec frog build fixup
-      ;;
-    all-deploy)
-      exec frog build fixup deploy
-      ;;
-    init)
-      exec raco frog --init
+      if [[ $blog_dir == "." ]] ; then
+        raco frog -c
+        rm -f index-*.html sitemap.txt
+      else 
+        # If using an output directory other than the blog's top level,
+        # it's easier to just blow away the whole blog directory
+	echo deleting $blog_dir
+	rm -rf $blog_dir
+      fi
       ;;
     resume)
-      exec $EDITOR `readlink $draft`
+      if [[ -e $draft ]] ; then
+	$EDITOR `readlink $draft`
+      else
+        echo no draft to resume
+      fi
       ;;
     delete-draft)
       echo deleting draft `readlink $draft`
       rm -f `readlink $draft`
       rm -f $draft
+      ;;
+    init)
+      raco frog --init
+      ;;
+    all)
+      $0 build fixup
+      ;;
+    all-deploy)
+      $0 build fixup deploy
       ;;
     *)
       exec raco frog "$@"
@@ -73,7 +93,7 @@ case "$1" in
     post_name=`sed '1,2d' $new_post_tmp`
     rm -f $new_post_tmp
     ln -s $post_name $draft
-    exec frog resume
+    exec frog resume ${@:3}
     ;;
   *)
     foreach subcmd ( "$@" )
