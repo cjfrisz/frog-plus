@@ -92,7 +92,7 @@ case "$1" in
     raco frog -n "$2" > $new_post_tmp
     post_name=`sed '1,2d' $new_post_tmp`
     rm -f $new_post_tmp
-    ln -s $post_name $draft
+    ln -fs $post_name $draft
     exec $0 resume ${@:3}
     ;;
   *)
